@@ -6,36 +6,36 @@ package com.robin.manager.model;
 public class BrokerNode {
 
     // 节点唯一 id(每个节点在一段时间生成一个有效的 uuid)
-    private String id;
+    final private String id;
 
     // 节点 ip
-    private String ip;
+    final private String ip;
 
     // 端口（tcp加入集群监听端口）
-    private int port;
+    final private int port;
 
+    public BrokerNode(String id, String ip, int port) {
+        this.id = id;
+        this.ip = ip;
+        this.port = port;
+    }
 
     public String getId() {
         return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public String getIp() {
         return ip;
     }
 
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    public String url() {
+        StringBuffer url = new StringBuffer();
+        url.append("http://").append(ip).append(":").append(port);
+
+        return url.toString();
     }
 }
