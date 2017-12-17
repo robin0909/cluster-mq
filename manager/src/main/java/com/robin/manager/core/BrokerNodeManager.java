@@ -53,8 +53,8 @@ public class BrokerNodeManager {
      */
     public void init(String nodeId , String ip, int port) {
 
-        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 5000, TimeUnit.MILLISECONDS);
-        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 5000, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 1000, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 1000, TimeUnit.MILLISECONDS);
 
         this.self = nodeId;
         this.selfBrokerNode = new BrokerNode(this.self, ip, port);
@@ -161,10 +161,10 @@ public class BrokerNodeManager {
         public void run() {
 
             try {
-                logger.info("------------check cluster node---------------");
+//                logger.info("------------check cluster node---------------");
                 if (BrokerNodeManager.this.isLeader()) {
 
-                    logger.info("checking !!!");
+//                    logger.info("checking !!!");
 
                     Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
                     Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
@@ -193,7 +193,7 @@ public class BrokerNodeManager {
         String url = brokerNode.url();
         HttpRequest httpRequest = null;
         try {
-            httpRequest = HttpRequest.post(url.concat(this.checkUrl));
+            httpRequest = HttpRequest.post(url.concat(this.checkUrl)).connectTimeout(300);
             if (httpRequest != null && httpRequest.code() == 200) {
                 return true;
             }
@@ -216,11 +216,11 @@ public class BrokerNodeManager {
         public void run() {
 
             try {
-                logger.info("------------update leader node---------------");
+//                logger.info("------------update leader node---------------");
                 if (BrokerNodeManager.this.existsLeader()) {
                     if (!BrokerNodeManager.this.isLeader()) {
 
-                        logger.info("updating from leader: {}", leader);
+//                        logger.info("updating from leader: {}", leader);
 
                         JSONObject param = new JSONObject();
                         param.put("leader", leader);
@@ -230,7 +230,8 @@ public class BrokerNodeManager {
 
                         try {
                             HttpRequest httpRequest = HttpRequest.post(brokerNode.url().concat(updateUrl))
-                                    .form("data", param.toJSONString());
+                                    .form("data", param.toJSONString())
+                                    .connectTimeout(300);
 
                             if (httpRequest != null && httpRequest.code() == 200) {
 

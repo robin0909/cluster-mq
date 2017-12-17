@@ -22,7 +22,8 @@ public class ClusterServiceImpl implements ClusterService {
         HttpRequest httpRequest = HttpRequest.post(brokerNodeManager.getBrokerNode(brokerNodeManager.getLeader()).url().concat(addUrl))
                 .form("nodeId", brokerNode.getId())
                 .form("ip", brokerNode.getIp())
-                .form("port", brokerNode.getPort());
+                .form("port", brokerNode.getPort())
+                .connectTimeout(500);
 
         if (httpRequest.code() == 200) {
             String body = httpRequest.body();
