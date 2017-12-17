@@ -238,7 +238,7 @@ public class BrokerNodeManager {
                                 String body = httpRequest.body();
                                 JSONObject data = JSONObject.parseObject(body).getJSONObject("data");
 
-                                logger.info("data: {}", data.toJSONString());
+//                                logger.info("data: {}", data.toJSONString());
 
                                 UpdateData updateData = new UpdateData(data);
                                 BrokerNodeManager.this.refreshData(updateData);
