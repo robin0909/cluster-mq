@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class ClusterServiceImpl implements ClusterService {
 
-    final static private String addUrl = "/node/add";
+    final static private String addUrl = "/core/add";
 
     @Autowired
     private BrokerNodeManager brokerNodeManager;
