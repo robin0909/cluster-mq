@@ -53,7 +53,7 @@ public class BrokerNodeManager {
      */
     public void init(String nodeId , String ip, int port) {
 
-        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 500, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 1000, TimeUnit.MILLISECONDS);
         executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 1500, TimeUnit.MILLISECONDS);
 
         this.self = nodeId;
@@ -81,6 +81,14 @@ public class BrokerNodeManager {
     public BrokerNode getBrokerNode(String id) {
         synchronized (mux) {
             return brokerNodeMap.get(id);
+        }
+    }
+
+    public void clean() {
+
+        synchronized (mux) {
+            this.leader = null;
+            this.brokerNodeMap.clear();
         }
     }
 
@@ -113,23 +121,18 @@ public class BrokerNodeManager {
     private void electLeader() {
 
         synchronized (mux) {
-//            int nodeSize = brokerNodeMap.size();
-//            if (nodeSize < 2) {
-//                logger.warn("节点数量小于 2 个, 数据可能会丢失");
-//            } else {
-                Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
-                Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
+            Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
+            Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
 
-                while (iterator.hasNext()) {
-                    Map.Entry<String, BrokerNode> entry = iterator.next();
-                    this.leader = entry.getKey();
+            while (iterator.hasNext()) {
+                Map.Entry<String, BrokerNode> entry = iterator.next();
+                this.leader = entry.getKey();
 
-                    logger.info("-------------new leader-------------");
-                    logger.info("id: {}, ip: {}:{}", leader, entry.getValue().getIp(), entry.getValue().getPort());
+                logger.info("-------------new leader-------------");
+                logger.info("id: {}, ip: {}:{}", leader, entry.getValue().getIp(), entry.getValue().getPort());
 
-                    break;
-                }
-//            }
+                break;
+            }
         }
 
     }
@@ -161,10 +164,7 @@ public class BrokerNodeManager {
         public void run() {
 
             try {
-//                logger.info("------------check cluster node---------------");
                 if (BrokerNodeManager.this.isLeader()) {
-
-//                    logger.info("checking !!!");
 
                     Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
                     Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
@@ -216,11 +216,8 @@ public class BrokerNodeManager {
         public void run() {
 
             try {
-//                logger.info("------------update leader node---------------");
                 if (BrokerNodeManager.this.existsLeader()) {
                     if (!BrokerNodeManager.this.isLeader()) {
-
-//                        logger.info("updating from leader: {}", leader);
 
                         JSONObject param = new JSONObject();
                         param.put("leader", leader);
@@ -229,9 +226,11 @@ public class BrokerNodeManager {
                         BrokerNode brokerNode = BrokerNodeManager.this.getBrokerNode(leader);
 
                         try {
-                            HttpRequest httpRequest = HttpRequest.post(brokerNode.url().concat(updateUrl))
-                                    .form("data", param.toJSONString())
-                                    .connectTimeout(300);
+                            HttpRequest httpRequest = HttpRequest
+                                    .post(brokerNode.url().concat(updateUrl))
+                                    .connectTimeout(500)
+                                    .readTimeout(500)
+                                    .form("data", param.toJSONString());
 
                             if (httpRequest != null && httpRequest.code() == 200) {
 
@@ -270,6 +269,7 @@ public class BrokerNodeManager {
     public void refreshData(UpdateData updateData) {
         // 更新 map 和 leader数据
         synchronized (mux) {
+            brokerNodeMap.clear();
             brokerNodeMap.putAll(updateData.getBrokerNodeMap());
             this.leader = updateData.getLeader();
         }

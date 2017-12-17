@@ -15,8 +15,10 @@ public interface ClusterService {
 
     /**
      *  移除节点
-     * @param id
+     * @param nodeId
      * @return
      */
-    boolean removeBrokerNode(String id);
+    UpdateData removeBrokerNode(String nodeId);
+
+    boolean resetRelativeNode(UpdateData updateData, String url);
 }

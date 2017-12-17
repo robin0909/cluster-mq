@@ -1,5 +1,6 @@
 package com.robin.manager.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.robin.manager.core.BrokerNodeManager;
 import com.robin.manager.help.action.Result;
 import com.robin.manager.model.BrokerNode;
@@ -64,8 +65,6 @@ public class CoreController {
 
         BrokerNode brokerNode = new BrokerNode(nodeId, ip, port);
 
-//        brokerNodeManager.upsertBrokerNode(brokerNode);
-
         // 向 leader 节点加入新节点数据
         if (!brokerNodeManager.isLeader()) {
             UpdateData updateData = clusterService.addBrokerNode(brokerNode);
@@ -75,6 +74,25 @@ public class CoreController {
         }
 
         UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
+
+        return Result.newSucess(updateData);
+    }
+
+    @RequestMapping(value = "/reset")
+    public Result resetLeaderBrokerNode(String json) {
+
+        JSONObject param;
+        UpdateData updateData;
+
+        try {
+            param = JSONObject.parseObject(json);
+            updateData = new UpdateData(param);
+        } catch (Exception e) {
+            return Result.newFail("重置失败，参数非法");
+        }
+
+        brokerNodeManager.clean();
+        brokerNodeManager.refreshData(updateData);
 
         return Result.newSucess(updateData);
     }
