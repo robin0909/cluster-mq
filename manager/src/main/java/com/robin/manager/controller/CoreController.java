@@ -4,6 +4,7 @@ import com.robin.manager.core.BrokerNodeManager;
 import com.robin.manager.help.action.Result;
 import com.robin.manager.model.BrokerNode;
 import com.robin.manager.model.UpdateData;
+import com.robin.manager.service.ClusterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +20,9 @@ public class CoreController {
 
     @Autowired
     private BrokerNodeManager brokerNodeManager;
+
+    @Autowired
+    private ClusterService clusterService;
 
     /**
      * 接茬非 leader 节点是否可用
@@ -60,7 +64,15 @@ public class CoreController {
 
         BrokerNode brokerNode = new BrokerNode(nodeId, ip, port);
 
-        brokerNodeManager.upsertBrokerNode(brokerNode);
+//        brokerNodeManager.upsertBrokerNode(brokerNode);
+
+        // 向 leader 节点加入新节点数据
+        if (!brokerNodeManager.isLeader()) {
+            UpdateData updateData = clusterService.addBrokerNode(brokerNode);
+            brokerNodeManager.refreshData(updateData);
+        } else {
+            brokerNodeManager.upsertBrokerNode(brokerNode);
+        }
 
         UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
 

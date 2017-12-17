@@ -84,6 +84,10 @@ public class BrokerNodeManager {
         }
     }
 
+    public String getLeader() {
+        return leader;
+    }
+
     public UpdateData getbrokerNodeMap() {
 
         UpdateData updateData = new UpdateData();

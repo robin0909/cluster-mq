@@ -1,6 +1,7 @@
 package com.robin.manager.service;
 
 import com.robin.manager.model.BrokerNode;
+import com.robin.manager.model.UpdateData;
 
 public interface ClusterService {
 
@@ -10,7 +11,7 @@ public interface ClusterService {
      *      true 添加成功
      *      false 添加失败
      */
-    boolean addBrokerNode(BrokerNode brokerNode);
+    UpdateData addBrokerNode(BrokerNode brokerNode);
 
     /**
      *  移除节点
