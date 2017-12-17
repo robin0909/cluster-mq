@@ -53,8 +53,8 @@ public class BrokerNodeManager {
      */
     public void init(String nodeId , String ip, int port) {
 
-        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 1000, TimeUnit.MILLISECONDS);
-        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 1000, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 500, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 1500, TimeUnit.MILLISECONDS);
 
         this.self = nodeId;
         this.selfBrokerNode = new BrokerNode(this.self, ip, port);
