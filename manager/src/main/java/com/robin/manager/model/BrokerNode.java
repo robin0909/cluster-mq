@@ -1,5 +1,7 @@
 package com.robin.manager.model;
 
+import com.alibaba.fastjson.JSONObject;
+
 /**
  * 集群节点实体类
  */
@@ -18,6 +20,12 @@ public class BrokerNode {
         this.id = id;
         this.ip = ip;
         this.port = port;
+    }
+
+    public BrokerNode(JSONObject json) {
+        this.id = json.getString("id");
+        this.ip = json.getString("ip");
+        this.port = json.getInteger("port");
     }
 
     public String getId() {

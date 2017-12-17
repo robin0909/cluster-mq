@@ -19,7 +19,7 @@ public class BrokerNodeManager {
 
     final Object mux = new Object();
 
-    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(3);
+    private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(6);
 
     private final AbstractMap<String, BrokerNode> brokerNodeMap = new ConcurrentHashMap<String, BrokerNode>();
 
@@ -42,20 +42,27 @@ public class BrokerNodeManager {
     private BrokerNode selfBrokerNode;
 
 
+    private String ip;
+    private int port;
+
+
 
     /**
      * 初始化定时任务， 必须要调用
      *  500 ms
      */
-    public void init(String ip, int port) {
+    public void init(String nodeId , String ip, int port) {
 
-        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 600, 600, TimeUnit.MILLISECONDS);
-        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 600, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new UpdateFromLeaderNode(), 300, 5000, TimeUnit.MILLISECONDS);
+        executor.scheduleWithFixedDelay(new CheckNodeTask(), 600, 5000, TimeUnit.MILLISECONDS);
 
-        this.self = UUID.randomUUID().toString();
+        this.self = nodeId;
         this.selfBrokerNode = new BrokerNode(this.self, ip, port);
 
         this.upsertBrokerNode(this.selfBrokerNode);
+
+        this.ip = ip;
+        this.port = port;
     }
 
     public BrokerNode upsertBrokerNode(BrokerNode brokerNode) {
@@ -68,6 +75,12 @@ public class BrokerNodeManager {
     public BrokerNode removeBrokerNode(String id) {
         synchronized (mux) {
             return brokerNodeMap.remove(id);
+        }
+    }
+
+    public BrokerNode getBrokerNode(String id) {
+        synchronized (mux) {
+            return brokerNodeMap.get(id);
         }
     }
 
@@ -95,25 +108,36 @@ public class BrokerNodeManager {
      */
     private void electLeader() {
 
-        int nodeSize = brokerNodeMap.size();
-        if (nodeSize < 2) {
-            logger.warn("节点数量小于 2 个, 数据可能会丢失");
-        } else {
-            Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
-            Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
+        synchronized (mux) {
+//            int nodeSize = brokerNodeMap.size();
+//            if (nodeSize < 2) {
+//                logger.warn("节点数量小于 2 个, 数据可能会丢失");
+//            } else {
+                Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
+                Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
 
-            while (iterator.hasNext()) {
-                Map.Entry<String, BrokerNode> entry = iterator.next();
-                this.leader = entry.getKey();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, BrokerNode> entry = iterator.next();
+                    this.leader = entry.getKey();
 
-                logger.info("-------------new leader-------------");
-                logger.info("id: {}, ip: {}:{}", leader, entry.getValue().getIp(), entry.getValue().getPort());
+                    logger.info("-------------new leader-------------");
+                    logger.info("id: {}, ip: {}:{}", leader, entry.getValue().getIp(), entry.getValue().getPort());
 
-                break;
-            }
-
-
+                    break;
+                }
+//            }
         }
+
+    }
+
+    /**
+     * 当竞选失败时，就选择自己为 leader
+     */
+    public void setSelfLeader() {
+        this.leader = this.self;
+
+        logger.info("-------------new leader-------------");
+        logger.info("id: {}, ip: {}:{}", leader, ip, port);
     }
 
     public boolean isLeader() {
@@ -131,37 +155,52 @@ public class BrokerNodeManager {
     private class CheckNodeTask implements Runnable {
 
         public void run() {
-            if (BrokerNodeManager.this.isLeader()) {
 
-                Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
-                Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
+            try {
+                logger.info("------------check cluster node---------------");
+                if (BrokerNodeManager.this.isLeader()) {
 
-                while (iterator.hasNext()) {
-                    Map.Entry<String, BrokerNode> nodeEntry = iterator.next();
-                    if (!nodeEntry.getKey().equals(BrokerNodeManager.this.self)) {
-                        // 检查节点是否可用
-                        boolean isNormal = BrokerNodeManager.this.check(nodeEntry.getValue());
-                        // 移除不可用节点
-                        if (!isNormal) {
-                            BrokerNodeManager.this.removeBrokerNode(nodeEntry.getKey());
+                    logger.info("checking !!!");
+
+                    Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
+                    Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
+
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, BrokerNode> nodeEntry = iterator.next();
+                        if (!nodeEntry.getKey().equals(BrokerNodeManager.this.self)) {
+                            // 检查节点是否可用
+                            boolean isNormal = BrokerNodeManager.this.check(nodeEntry.getValue());
+                            // 移除不可用节点
+                            if (!isNormal) {
+                                BrokerNodeManager.this.removeBrokerNode(nodeEntry.getKey());
+                            }
                         }
                     }
                 }
+            } catch (Throwable e) {
+                logger.error("error", e);
             }
+
         }
     }
 
     private boolean check(BrokerNode brokerNode) {
 
         String url = brokerNode.url();
-        HttpRequest httpRequest = HttpRequest.post(url.concat(this.checkUrl));
-
-        if (httpRequest.code() == 200) {
-            return true;
+        HttpRequest httpRequest = null;
+        try {
+            httpRequest = HttpRequest.post(url.concat(this.checkUrl));
+            if (httpRequest != null && httpRequest.code() == 200) {
+                return true;
+            }
+        } catch (Exception e) {
+            logger.warn("node is down");
+            logger.warn(url);
         }
 
         return false;
     }
+
 
     /**
      * 从 leader 节点进行同步，保证数据的一致性，一旦无法进行同步，那么leader 就是失效了，需要从新进行选举
@@ -172,36 +211,63 @@ public class BrokerNodeManager {
 
         public void run() {
 
-            if (!BrokerNodeManager.this.isLeader()) {
-                JSONObject param = new JSONObject();
-                param.put("leader", leader);
-                param.put("self", self);
+            try {
+                logger.info("------------update leader node---------------");
+                if (BrokerNodeManager.this.existsLeader()) {
+                    if (!BrokerNodeManager.this.isLeader()) {
 
-                BrokerNode brokerNode = brokerNodeMap.get(leader);
+                        logger.info("updating from leader: {}", leader);
 
-                HttpRequest httpRequest = HttpRequest.post(brokerNode.url().concat(updateUrl))
-                        .form("data", param.toJSONString())
-                        .connectTimeout(300);
+                        JSONObject param = new JSONObject();
+                        param.put("leader", leader);
+                        param.put("self", self);
 
-                if (httpRequest.code() == 200) {
+                        BrokerNode brokerNode = BrokerNodeManager.this.getBrokerNode(leader);
 
-                    String body = httpRequest.body();
-                    JSONObject data = JSONObject.parseObject(body);
-                    UpdateData updateData = new UpdateData(data);
-                    BrokerNodeManager.this.refreshData(updateData);
+                        try {
+                            HttpRequest httpRequest = HttpRequest.post(brokerNode.url().concat(updateUrl))
+                                    .form("data", param.toJSONString());
 
-                } else {
-                    BrokerNodeManager.this.removeBrokerNode(leader);
+                            if (httpRequest != null && httpRequest.code() == 200) {
 
-                    // 开始选举
-                    BrokerNodeManager.this.electLeader();
+                                String body = httpRequest.body();
+                                JSONObject data = JSONObject.parseObject(body).getJSONObject("data");
+
+                                logger.info("data: {}", data.toJSONString());
+
+                                UpdateData updateData = new UpdateData(data);
+                                BrokerNodeManager.this.refreshData(updateData);
+
+                            } else {
+                                BrokerNodeManager.this.removeBrokerNode(BrokerNodeManager.this.leader);
+                                BrokerNodeManager.this.leader = null;
+
+                                // 开始选举
+                                BrokerNodeManager.this.electLeader();
+                            }
+                        } catch (Exception e) {
+                            logger.warn("leader is down");
+                            BrokerNodeManager.this.removeBrokerNode(BrokerNodeManager.this.leader);
+                            BrokerNodeManager.this.leader = null;
+
+                            // 开始选举
+                            BrokerNodeManager.this.electLeader();
+                        }
+                    }
                 }
+            } catch (Throwable e) {
+                logger.error("error", e);
             }
+
         }
     }
 
-    private void refreshData(UpdateData updateData) {
-        //todo 更新 map 和 leader数据
+    public void refreshData(UpdateData updateData) {
+        // 更新 map 和 leader数据
+        synchronized (mux) {
+            brokerNodeMap.putAll(updateData.getBrokerNodeMap());
+            this.leader = updateData.getLeader();
+        }
     }
 
 

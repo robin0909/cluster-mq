@@ -2,7 +2,11 @@ package com.robin.manager.model;
 
 import com.alibaba.fastjson.JSONObject;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class UpdateData {
 
@@ -22,9 +26,21 @@ public class UpdateData {
     }
 
     public UpdateData(JSONObject json) {
-        this.brokerNodeMap = json.getObject("brokerNodeMap", Map.class);
+
+        Map<String, JSONObject> tempMap = json.getObject("brokerNodeMap", Map.class);
+
+        Map<String, BrokerNode> stringBrokerNodeHashMap = new ConcurrentHashMap<String, BrokerNode>();
+
+        Set<Map.Entry<String, JSONObject>> entries = tempMap.entrySet();
+        Iterator<Map.Entry<String, JSONObject>> iterator = entries.iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, JSONObject> entry = iterator.next();
+            stringBrokerNodeHashMap.put(entry.getKey(), new BrokerNode(entry.getValue()));
+        }
+
         this.leader = json.getString("leader");
         this.self = json.getString("self");
+        this.brokerNodeMap = stringBrokerNodeHashMap;
     }
 
     public Map<String, BrokerNode> getBrokerNodeMap() {
