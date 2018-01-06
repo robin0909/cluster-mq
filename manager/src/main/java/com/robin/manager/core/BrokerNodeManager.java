@@ -3,6 +3,7 @@ package com.robin.manager.core;
 import com.alibaba.fastjson.JSONObject;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.robin.manager.model.BrokerNode;
+import com.robin.manager.model.TopicWrap;
 import com.robin.manager.model.UpdateData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,11 +18,14 @@ public class BrokerNodeManager {
 
     private final static Logger logger = LoggerFactory.getLogger(BrokerNodeManager.class);
 
-    final Object mux = new Object();
+    final Object nodeMux = new Object();
+    final Object topicMux = new Object();
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(6);
 
     private final AbstractMap<String, BrokerNode> brokerNodeMap = new ConcurrentHashMap<String, BrokerNode>();
+
+    private final ConcurrentHashMap<String, TopicWrap> topicWrapMap = new ConcurrentHashMap<String, TopicWrap>();
 
     private final String checkUrl = "/core/check";
     private final String updateUrl = "/core/update";
@@ -66,27 +70,39 @@ public class BrokerNodeManager {
     }
 
     public BrokerNode upsertBrokerNode(BrokerNode brokerNode) {
-        synchronized (mux) {
+        synchronized (nodeMux) {
             String id = brokerNode.getId();
             return brokerNodeMap.put(id, brokerNode);
         }
     }
 
     public BrokerNode removeBrokerNode(String id) {
-        synchronized (mux) {
+        synchronized (nodeMux) {
             return brokerNodeMap.remove(id);
         }
     }
 
     public BrokerNode getBrokerNode(String id) {
-        synchronized (mux) {
+        synchronized (nodeMux) {
             return brokerNodeMap.get(id);
+        }
+    }
+
+    public boolean addTopic(TopicWrap topicWrap) {
+        synchronized (topicMux) {
+            return topicWrapMap.put(topicWrap.getTopic(), topicWrap) != null;
+        }
+    }
+
+    public TopicWrap removeTopic(String topic) {
+        synchronized (topicMux) {
+            return topicWrapMap.remove(topic);
         }
     }
 
     public void clean() {
 
-        synchronized (mux) {
+        synchronized (nodeMux) {
             this.leader = null;
             this.brokerNodeMap.clear();
         }
@@ -96,18 +112,12 @@ public class BrokerNodeManager {
         return leader;
     }
 
-    public UpdateData getbrokerNodeMap() {
+    public UpdateData getBrokerUpdateData() {
 
         UpdateData updateData = new UpdateData();
-        synchronized (mux) {
-            Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
 
-            HashMap<String, BrokerNode> map = new HashMap<String, BrokerNode>();
-            for (Map.Entry<String, BrokerNode> entry : entries) {
-                map.put(entry.getKey(), entry.getValue());
-            }
-            updateData.setBrokerNodeMap(map);
-        }
+        updateData.setBrokerNodeMap(this.getBrokerNodeMap());
+        updateData.setTopicWrapMap(this.getTopicWrapMap());
 
         updateData.setLeader(leader);
         updateData.setSelf(self);
@@ -115,12 +125,39 @@ public class BrokerNodeManager {
         return updateData;
     }
 
+    public Map<String, BrokerNode> getBrokerNodeMap() {
+        synchronized (nodeMux) {
+            Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
+
+            HashMap<String, BrokerNode> map = new HashMap<String, BrokerNode>();
+            for (Map.Entry<String, BrokerNode> entry : entries) {
+                map.put(entry.getKey(), entry.getValue());
+            }
+            return map;
+        }
+    }
+
+
+    public synchronized Map<String, TopicWrap> getTopicWrapMap() {
+
+        synchronized (topicMux) {
+            HashMap<String, TopicWrap> map = new HashMap<>();
+            Set<Map.Entry<String, TopicWrap>> entries = topicWrapMap.entrySet();
+
+            for (Map.Entry<String, TopicWrap> entry : entries) {
+                map.put(entry.getKey(), entry.getValue());
+            }
+
+            return map;
+        }
+    }
+
     /**
      * 参加竞选 leader
      */
     private void electLeader() {
 
-        synchronized (mux) {
+        synchronized (nodeMux) {
             Set<Map.Entry<String, BrokerNode>> entries = brokerNodeMap.entrySet();
             Iterator<Map.Entry<String, BrokerNode>> iterator = entries.iterator();
 
@@ -237,7 +274,7 @@ public class BrokerNodeManager {
                                 String body = httpRequest.body();
                                 JSONObject data = JSONObject.parseObject(body).getJSONObject("data");
 
-//                                logger.info("data: {}", data.toJSONString());
+                                logger.info("data: {}", data.toJSONString());
 
                                 UpdateData updateData = new UpdateData(data);
                                 BrokerNodeManager.this.refreshData(updateData);
@@ -266,11 +303,16 @@ public class BrokerNodeManager {
         }
     }
 
+    public void updateTopic() {
+        executor.execute(new UpdateFromLeaderNode());
+    }
+
     public void refreshData(UpdateData updateData) {
         // 更新 map 和 leader数据
-        synchronized (mux) {
+        synchronized (nodeMux) {
             brokerNodeMap.clear();
             brokerNodeMap.putAll(updateData.getBrokerNodeMap());
+            topicWrapMap.putAll(updateData.getTopicWrapMap());
             this.leader = updateData.getLeader();
         }
     }

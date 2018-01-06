@@ -44,7 +44,7 @@ public class CoreController {
 
         // todo data 暂时没用，以后扩展选举算法可用到
 
-        UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
+        UpdateData updateData = brokerNodeManager.getBrokerUpdateData();
 
         return Result.newSucess(updateData);
     }
@@ -73,7 +73,7 @@ public class CoreController {
             brokerNodeManager.upsertBrokerNode(brokerNode);
         }
 
-        UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
+        UpdateData updateData = brokerNodeManager.getBrokerUpdateData();
 
         return Result.newSucess(updateData);
     }

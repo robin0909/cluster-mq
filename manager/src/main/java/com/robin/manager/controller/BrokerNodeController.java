@@ -3,6 +3,7 @@ package com.robin.manager.controller;
 import com.robin.manager.core.BrokerNodeManager;
 import com.robin.manager.help.action.Result;
 import com.robin.manager.model.BrokerNode;
+import com.robin.manager.model.TopicWrap;
 import com.robin.manager.model.UpdateData;
 import com.robin.manager.service.ClusterService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -30,7 +32,7 @@ public class BrokerNodeController {
     @RequestMapping(value = "/all")
     public Result getAllBrokerNode() {
 
-        UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
+        UpdateData updateData = brokerNodeManager.getBrokerUpdateData();
 
         return Result.newSucess(updateData);
     }
@@ -54,14 +56,16 @@ public class BrokerNodeController {
             brokerNodeManager.removeBrokerNode(nodeId);
         }
 
+        Map<String, TopicWrap> topicWrapMap = brokerNodeManager.getTopicWrapMap();
+
         // 重置被删除的节点
         HashMap<String, BrokerNode> nodeHashMap = new HashMap<String, BrokerNode>();
         nodeHashMap.put(brokerNode.getId(), brokerNode);
-        UpdateData updateData = new UpdateData(nodeHashMap, brokerNode.getId(), brokerNode.getId());
+        UpdateData updateData = new UpdateData(nodeHashMap, brokerNode.getId(), brokerNode.getId(), topicWrapMap);
 
         clusterService.resetRelativeNode(updateData, brokerNode.url());
 
-        return Result.newSucess(brokerNodeManager.getbrokerNodeMap());
+        return Result.newSucess(brokerNodeManager.getBrokerUpdateData());
     }
 
     @RequestMapping(value = "/add")
@@ -76,7 +80,7 @@ public class BrokerNodeController {
             brokerNodeManager.upsertBrokerNode(brokerNode);
         }
 
-        UpdateData updateData = brokerNodeManager.getbrokerNodeMap();
+        UpdateData updateData = brokerNodeManager.getBrokerUpdateData();
 
         boolean isReset = clusterService.resetRelativeNode(updateData, brokerNode.url());
 
