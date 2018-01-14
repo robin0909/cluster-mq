@@ -90,7 +90,8 @@ public class BrokerNodeManager {
 
     public boolean addTopic(TopicWrap topicWrap) {
         synchronized (topicMux) {
-            return topicWrapMap.put(topicWrap.getTopic(), topicWrap) != null;
+            topicWrapMap.put(topicWrap.getTopic(), topicWrap);
+            return topicWrapMap.containsKey(topicWrap.getTopic());
         }
     }
 
@@ -310,9 +311,13 @@ public class BrokerNodeManager {
     public void refreshData(UpdateData updateData) {
         // 更新 map 和 leader数据
         synchronized (nodeMux) {
+
             brokerNodeMap.clear();
             brokerNodeMap.putAll(updateData.getBrokerNodeMap());
+
+            topicWrapMap.clear();
             topicWrapMap.putAll(updateData.getTopicWrapMap());
+
             this.leader = updateData.getLeader();
         }
     }

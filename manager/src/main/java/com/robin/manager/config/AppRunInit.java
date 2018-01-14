@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.robin.manager.core.BrokerNodeManager;
 import com.robin.manager.model.UpdateData;
+import com.robin.manager.server.CoreServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ public class AppRunInit implements CommandLineRunner {
 
     @Autowired
     private BrokerNodeManager brokerNodeManager;
+
+    @Autowired
+    private CoreServer coreServer;
 
     public void run(String... args) {
 
