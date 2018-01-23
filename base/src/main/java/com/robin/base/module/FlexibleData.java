@@ -5,6 +5,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 核心协议包
@@ -32,6 +34,11 @@ public class FlexibleData {
     final static public short ACK = 3;
 
     private short protocolType;
+
+    /**
+     * 包里面的总长度 byte
+     */
+    private int len = 0;
 
     /**
      * 协议头
@@ -75,12 +82,16 @@ public class FlexibleData {
     }
 
     public FlexibleData(Buffer buffer) {
-        this.parseHeaderAndData(buffer);
+        this.parseHeaderAndData(buffer, 0);
     }
 
-    private void parseHeaderAndData(Buffer buffer) {
+    public FlexibleData(Buffer buffer, int start) {
+        this.parseHeaderAndData(buffer, start);
+    }
 
-        int len = 0;
+    private void parseHeaderAndData(Buffer buffer, int start) {
+
+        int len = start;
 
         this.protocolType = buffer.getShort(len);
         len += Short.BYTES;
@@ -92,17 +103,22 @@ public class FlexibleData {
         len += tLen;
 
         if (protocolType == HAND_SHAKE || protocolType == ACK) {
+            this.len = len;
             return;
         }
 
-        long dLen = buffer.getLong(len);
-        len += Long.BYTES;
+        int dLen = buffer.getInt(len);
+        len += Integer.BYTES;
 
-//        this.type = type;
+        if (len + dLen > buffer.length()) {
+            throw new IndexOutOfBoundsException();
+        }
 
-        this.data = buffer.getBuffer(len, buffer.length());
+        this.data = buffer.getBuffer(len, len + dLen);
 
         this.header = this.generateHeader(topic, dLen);
+
+        this.len = len + dLen - start;
     }
 
     public SubScribeType getType() {
@@ -137,13 +153,13 @@ public class FlexibleData {
      * @param topic
      * @return
      */
-    private Buffer generateHeader(String topic, long dLen) {
+    private Buffer generateHeader(String topic, int dLen) {
         Buffer buffer = Buffer.buffer();
 
         buffer.appendShort(this.protocolType);
         buffer.appendInt(topic.length());
         buffer.appendString(topic);
-        buffer.appendLong(dLen);
+        buffer.appendInt(dLen);
 
         return buffer;
     }
@@ -164,24 +180,9 @@ public class FlexibleData {
         return this.protocolType == ACK;
     }
 
-
-    public static void main(String[] args) {
-
-        JsonObject temp = new JsonObject();
-        temp.put("name", "robin");
-        temp.put("age", 25);
-        Buffer data = Buffer.buffer(temp.toString().getBytes());
-
-        FlexibleData flexibleData = new FlexibleData("demo", SubScribeType.ONE_TO_ONE, data);
-
-        FlexibleData flexibleData1 = new FlexibleData(flexibleData.pack());
-//        flexibleData1.setType(SubScribeType.ONE_TO_ONE);
-
-        System.out.println(flexibleData1.topic);
-
-        System.out.println(flexibleData1.isData());
-
-        System.out.println(new String(flexibleData1.getData().getBytes(), Charset.forName("UTF-8")));
+    public int getLen() {
+        return this.len;
     }
+
 
 }

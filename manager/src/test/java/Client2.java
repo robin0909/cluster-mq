@@ -1,3 +1,4 @@
+import com.robin.base.core.ProtrolCore;
 import com.robin.base.module.FlexibleData;
 import com.robin.base.type.SubScribeType;
 import io.vertx.core.Vertx;
@@ -5,6 +6,8 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
+
+import java.util.List;
 
 
 public class Client2 {
@@ -24,13 +27,17 @@ public class Client2 {
 
                 netSocket[0] = res.result();
 
+//                netSocket[0].setWriteQueueMaxSize(1024);
+
                 netSocket[0].write(flexibleData.pack());
 
                 netSocket[0].handler(res1->{
-                    FlexibleData flexibleData1 = new FlexibleData(res1);
+//                    List<FlexibleData> flexibleDataList = ProtrolCore.parseFlexibleDatas(res1);
+//                    for (FlexibleData data : flexibleDataList) {
+//                        String topic = data.getTopic();
+//                        System.out.println(String.format("ack success , topic: %s", topic));
+//                    }
 
-                    String topic = flexibleData1.getTopic();
-                    System.out.println(String.format("ack success , topic: %s", topic));
                 });
 
             } else {
@@ -41,7 +48,7 @@ public class Client2 {
 
         Thread.sleep(3000L);
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 10000; i++) {
 
             JsonObject json = new JsonObject();
             json.put("index", i);
@@ -53,6 +60,7 @@ public class Client2 {
             FlexibleData data = new FlexibleData("demo", SubScribeType.ONE_TO_ONE, buffer);
 
             netSocket[0].write(data.pack());
+
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.robin.manager.server;
 
+import com.robin.base.core.ProtrolCore;
 import com.robin.base.module.FlexibleData;
 import com.robin.base.type.SubScribeType;
 import com.robin.manager.core.BrokerNodeManager;
@@ -44,10 +45,10 @@ public class CoreServer extends AbstractVerticle {
     private RemoteTopicService remoteTopicService;
 
     // connectId  -  NetSocket
-    final private Map<String, NetSocket> connectsMap = new ConcurrentHashMap<>();
+    final static private Map<String, NetSocket> connectsMap = new ConcurrentHashMap<>();
 
     // topic  -  connectId
-    final private Map<String, List<String>> topicListMap = new ConcurrentHashMap<>();
+    final static private Map<String, List<String>> topicListMap = new ConcurrentHashMap<>();
 
     // connectId  -  topic
     final private Map<String, String> connectTopicMap = new ConcurrentHashMap<>();
@@ -58,40 +59,44 @@ public class CoreServer extends AbstractVerticle {
         server.connectHandler(socket->{
             String handlerID = socket.writeHandlerID();
             socket.handler(buffer->{
-                FlexibleData flexibleData = new FlexibleData(buffer);
-                if (flexibleData.isData()) {
-                    // 数据包
-                    TopicWrap topicWrap = brokerNodeManager.getTopicWrapMap().get(flexibleData.getTopic());
-                    if (topicWrap == null) {
-                        // 没有添加topic 就发送数据情况
-                        topicWrap = new TopicWrap(flexibleData.getTopic(), SubScribeType.ONE_TO_ONE.getType());
-                        brokerNodeManager.addTopic(topicWrap);
+//                FlexibleData flexibleData = new FlexibleData(buffer);
+
+                List<FlexibleData> flexibleDataList = ProtrolCore.parseFlexibleDatas(buffer);
+                for (FlexibleData flexibleData : flexibleDataList) {
+                    if (flexibleData.isData()) {
+                        // 数据包
+                        TopicWrap topicWrap = brokerNodeManager.getTopicWrapMap().get(flexibleData.getTopic());
+                        if (topicWrap == null) {
+                            // 没有添加topic 就发送数据情况
+                            topicWrap = new TopicWrap(flexibleData.getTopic(), SubScribeType.ONE_TO_ONE.getType());
+                            brokerNodeManager.addTopic(topicWrap);
 //                        remoteTopicService.addTopic(topicWrap);
-                        flexibleData.setType(SubScribeType.ONE_TO_ONE);
-                    } else {
-                        flexibleData.setType(SubScribeType.parse(topicWrap.getType()));
+                            flexibleData.setType(SubScribeType.ONE_TO_ONE);
+                        } else {
+                            flexibleData.setType(SubScribeType.parse(topicWrap.getType()));
+                        }
+
+                        queueCore.addData(flexibleData);
+                    } else if (flexibleData.isHandlShake()) {
+                        // 握手包
+                        String topic = flexibleData.getTopic();
+                        List<String> list = topicListMap.get(topic);
+
+                        if (list != null) {
+                            list.add(handlerID);
+                        } else {
+                            list = new ArrayList<>();
+                            list.add(handlerID);
+                            topicListMap.put(topic, list);
+                        }
+
+                        connectTopicMap.put(handlerID, topic);
                     }
 
-                    queueCore.addData(flexibleData);
-                } else if (flexibleData.isHandlShake()) {
-                    // 握手包
-                    String topic = flexibleData.getTopic();
-                    List<String> list = topicListMap.get(topic);
-
-                    if (list != null) {
-                        list.add(handlerID);
-                    } else {
-                        list = new ArrayList<>();
-                        list.add(handlerID);
-                        topicListMap.put(topic, list);
-                    }
-
-                    connectTopicMap.put(handlerID, topic);
+                    // ack
+                    flexibleData = new FlexibleData(flexibleData.getTopic(), FlexibleData.ACK);
+                    socket.write(flexibleData.pack());
                 }
-
-                // ack
-                flexibleData = new FlexibleData(flexibleData.getTopic(), FlexibleData.ACK);
-                socket.write(flexibleData.pack());
             });
 
             connectsMap.put(handlerID, socket);
@@ -107,7 +112,7 @@ public class CoreServer extends AbstractVerticle {
         });
     }
 
-    public void send(FlexibleData flexibleData) {
+    public static void send(FlexibleData flexibleData) {
 
         String topic = flexibleData.getTopic();
         ArrayList<String> connectList = new ArrayList<>();
@@ -117,13 +122,12 @@ public class CoreServer extends AbstractVerticle {
             NetSocket netSocket = connectsMap.get(connetId);
             if (netSocket != null) {
                 netSocket.write(flexibleData.pack());
-
 //                netSocket.handler(buf->{
 //                    FlexibleData data = new FlexibleData(buf);
 //                    if (data.isACK()) {
 //                        System.out.println("转发成功");
 //                    }
-//                });
+//
             }
         }
     }

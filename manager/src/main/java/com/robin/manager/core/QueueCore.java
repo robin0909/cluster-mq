@@ -1,8 +1,11 @@
 package com.robin.manager.core;
 
 import com.robin.base.module.FlexibleData;
+import com.robin.manager.server.CoreServer;
+import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -22,38 +25,46 @@ public class QueueCore {
     final private Map<Integer, SingleQueue> hashSingleQueueMap = new ConcurrentHashMap<>();
 
     final private int threadCount = 10;
-    final private ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+    final private ExecutorService executor = Executors.newFixedThreadPool(threadCount+3);
+
+    @Autowired
+    private CoreServer coreServer;
 
     public QueueCore() {
         for (int i = 0; i < threadCount; i++) {
-            hashSingleQueueMap.put(i, new SingleQueue());
+            hashSingleQueueMap.put(i, new SingleQueue(coreServer));
         }
     }
 
     @PostConstruct
     public void init() {
         executor.execute(()->{
-            try {
-                FlexibleData flexibleData = queue.take();
+            while (true) {
+                try {
+                    FlexibleData flexibleData = queue.take();
 
-                int hash = flexibleData.getTopic().hashCode() % threadCount;
+                    int hash = flexibleData.getTopic().hashCode() % threadCount;
 
-                SingleQueue singleQueue = hashSingleQueueMap.get(hash);
+                    logger.info("topic: {} , hash: {}", flexibleData.getTopic(), hash);
 
-                singleQueue.addData(flexibleData);
+                    SingleQueue singleQueue = hashSingleQueueMap.get(hash);
 
-            } catch (Throwable e) {
-                logger.error("error", e);
+                    singleQueue.addData(flexibleData);
+
+                } catch (Throwable e) {
+                    logger.error("error", e);
+                }
             }
         });
+
+        for (int i = 0; i < threadCount; i++) {
+            executor.execute(hashSingleQueueMap.get(i));
+        }
     }
 
     public void addData(FlexibleData flexibleData) {
+
         queue.add(flexibleData);
-        logger.info("------------------");
-        logger.info("accept data, topic: {}, data: {}", flexibleData.getTopic(), new String(flexibleData.getData().getBytes()));
     }
-
-
 
 }

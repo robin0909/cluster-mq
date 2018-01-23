@@ -1,3 +1,4 @@
+import com.robin.base.core.ProtrolCore;
 import com.robin.base.module.FlexibleData;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -6,6 +7,8 @@ import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.NetSocket;
+
+import java.util.List;
 
 public class Client1 {
 
@@ -37,16 +40,20 @@ public class Client1 {
                 netSocket.write(flexibleData.pack());
 
                 netSocket.handler(res1->{
-                    FlexibleData flexibleData1 = new FlexibleData(res1);
 
-                    if (flexibleData1.isHandlShake()) {
-                        System.out.println("handshake success");
-                    } else if (flexibleData1.isACK()) {
-                        System.out.println("ack");
-                    } else if (flexibleData1.isData()) {
-                        Buffer buffer = flexibleData1.getData();
-                        System.out.println(new String(buffer.getBytes()));
+                    List<FlexibleData> flexibleDataList = ProtrolCore.parseFlexibleDatas(res1);
+                    for (FlexibleData data : flexibleDataList) {
+                        if (data.isHandlShake()) {
+                            System.out.println("handshake success");
+                        } else if (data.isACK()) {
+                            System.out.println("ack");
+                        } else if (data.isData()) {
+                            Buffer buffer = data.getData();
+                            System.out.println(new String(buffer.getBytes()));
+                        }
                     }
+
+
                 });
 
             } else {

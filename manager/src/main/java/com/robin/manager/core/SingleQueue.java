@@ -10,30 +10,37 @@ import org.springframework.beans.factory.annotation.Configurable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 @Configurable
-public class SingleQueue extends Thread {
+public class SingleQueue implements Runnable {
 
     final static private Logger logger = LoggerFactory.getLogger(SingleQueue.class);
 
     LinkedBlockingQueue<FlexibleData> datas;
 
-    @Autowired
     private CoreServer coreServer;
 
-    SingleQueue() {
+    SingleQueue(CoreServer coreServer) {
         this.datas = new LinkedBlockingQueue();
+        this.coreServer = coreServer;
     }
 
     public void addData(FlexibleData flexibleData) {
         datas.add(flexibleData);
+        logger.info("add data");
     }
 
     @Override
     public void run() {
-        try {
-            FlexibleData flexibleData = datas.take();
-            coreServer.send(flexibleData);
-        } catch (Throwable e) {
-            logger.error("error", e);
+        while (true) {
+            try {
+                FlexibleData flexibleData = datas.take();
+
+                logger.info("get data will send");
+
+                coreServer.send(flexibleData);
+            } catch (Throwable e) {
+                logger.error("error", e);
+                e.printStackTrace();
+            }
         }
     }
 }
