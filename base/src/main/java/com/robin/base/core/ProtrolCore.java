@@ -14,13 +14,13 @@ public class ProtrolCore {
 
     private final static Logger logger = LoggerFactory.getLogger(ProtrolCore.class);
 
-    static Buffer globBuffer = Buffer.buffer();
+    private Buffer globBuffer = Buffer.buffer();
 
     /**
      * 解包
      * @return
      */
-    public static List<FlexibleData> parseFlexibleDatas(Buffer buffer) {
+    public List<FlexibleData> parseFlexibleDatas(Buffer buffer) {
         List<FlexibleData> list = new ArrayList<>();
 
         synchronized (globBuffer) {
@@ -56,14 +56,14 @@ public class ProtrolCore {
         temp.put("age", 25);
         Buffer data = Buffer.buffer(temp.toString().getBytes());
 
-        FlexibleData flexibleData1 = new FlexibleData("demo10", SubScribeType.ONE_TO_ONE, data);
-        FlexibleData flexibleData2 = new FlexibleData("demo2", SubScribeType.ONE_TO_ONE, data);
+        FlexibleData flexibleData1 = new FlexibleData("demo10", SubScribeType.ONE_TO_ONE, FlexibleData.SEND_TYPE, data);
+        FlexibleData flexibleData2 = new FlexibleData("demo2", SubScribeType.ONE_TO_ONE, FlexibleData.SEND_TYPE, data);
 
         Buffer buffer = Buffer.buffer();
         buffer.appendBuffer(flexibleData1.pack());
         buffer.appendBuffer(flexibleData2.pack());
 
-        List<FlexibleData> flexibleDataList = parseFlexibleDatas(buffer);
+        List<FlexibleData> flexibleDataList = new ProtrolCore().parseFlexibleDatas(buffer);
 
         for (FlexibleData flexibleData : flexibleDataList) {
             System.out.println("-----------------");

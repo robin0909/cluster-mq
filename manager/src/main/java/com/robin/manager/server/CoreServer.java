@@ -53,15 +53,17 @@ public class CoreServer extends AbstractVerticle {
     // connectId  -  topic
     final private Map<String, String> connectTopicMap = new ConcurrentHashMap<>();
 
+    final ProtrolCore protrolCore = new ProtrolCore();
+
     @PostConstruct
     public void acceptData() {
         NetServer server = vertx.createNetServer(netServerOptions);
         server.connectHandler(socket->{
             String handlerID = socket.writeHandlerID();
             socket.handler(buffer->{
-//                FlexibleData flexibleData = new FlexibleData(buffer);
+////                FlexibleData flexibleData = new FlexibleData(buffer);
 
-                List<FlexibleData> flexibleDataList = ProtrolCore.parseFlexibleDatas(buffer);
+                List<FlexibleData> flexibleDataList = protrolCore.parseFlexibleDatas(buffer);
                 for (FlexibleData flexibleData : flexibleDataList) {
                     if (flexibleData.isData()) {
                         // 数据包
@@ -79,23 +81,20 @@ public class CoreServer extends AbstractVerticle {
                         queueCore.addData(flexibleData);
                     } else if (flexibleData.isHandlShake()) {
                         // 握手包
-                        String topic = flexibleData.getTopic();
-                        List<String> list = topicListMap.get(topic);
+                        // 接收方
+                        if (flexibleData.getSubsribeType() == FlexibleData.RECEIVE_TYPE) {
+                            String topic = flexibleData.getTopic();
+                            List<String> list = topicListMap.getOrDefault(topic, new ArrayList<>());
 
-                        if (list != null) {
                             list.add(handlerID);
-                        } else {
-                            list = new ArrayList<>();
-                            list.add(handlerID);
-                            topicListMap.put(topic, list);
+                            topicListMap.putIfAbsent(topic, list);
+                            connectTopicMap.put(handlerID, topic);
                         }
-
-                        connectTopicMap.put(handlerID, topic);
                     }
 
                     // ack
-                    flexibleData = new FlexibleData(flexibleData.getTopic(), FlexibleData.ACK);
-                    socket.write(flexibleData.pack());
+//                    flexibleData = new FlexibleData(flexibleData.getTopic(), FlexibleData.ACK, FlexibleData.SEND_TYPE);
+//                    socket.write(flexibleData.pack());
                 }
             });
 
@@ -117,6 +116,8 @@ public class CoreServer extends AbstractVerticle {
         String topic = flexibleData.getTopic();
         ArrayList<String> connectList = new ArrayList<>();
         connectList.addAll(topicListMap.get(topic));
+
+        logger.info("connect count: {}", connectList.size());
 
         for (String connetId : connectList) {
             NetSocket netSocket = connectsMap.get(connetId);

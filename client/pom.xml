@@ -10,11 +10,27 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>client</artifactId>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.robinyang</groupId>
+            <artifactId>base</artifactId>
         </dependency>
     </dependencies>
 </project>

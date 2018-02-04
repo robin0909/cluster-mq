@@ -28,7 +28,9 @@ public class Client1 {
         Vertx vertx = Vertx.vertx();
 
 
-        FlexibleData flexibleData = new FlexibleData("demo", FlexibleData.HAND_SHAKE);
+        FlexibleData flexibleData = new FlexibleData("demo", FlexibleData.HAND_SHAKE, FlexibleData.RECEIVE_TYPE);
+
+        ProtrolCore protrolCore = new ProtrolCore();
 
         NetClient client = vertx.createNetClient();
         client.connect(9000, "localhost", res->{
@@ -41,7 +43,7 @@ public class Client1 {
 
                 netSocket.handler(res1->{
 
-                    List<FlexibleData> flexibleDataList = ProtrolCore.parseFlexibleDatas(res1);
+                    List<FlexibleData> flexibleDataList = protrolCore.parseFlexibleDatas(res1);
                     for (FlexibleData data : flexibleDataList) {
                         if (data.isHandlShake()) {
                             System.out.println("handshake success");
@@ -49,7 +51,7 @@ public class Client1 {
                             System.out.println("ack");
                         } else if (data.isData()) {
                             Buffer buffer = data.getData();
-                            System.out.println(new String(buffer.getBytes()));
+                            System.out.println(buffer.toJsonObject().toString());
                         }
                     }
 

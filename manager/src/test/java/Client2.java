@@ -18,7 +18,7 @@ public class Client2 {
 
         NetSocket[] netSocket = new NetSocket[1];
 
-        FlexibleData flexibleData = new FlexibleData("demo", FlexibleData.HAND_SHAKE);
+        FlexibleData flexibleData = new FlexibleData("demo", FlexibleData.HAND_SHAKE, FlexibleData.SEND_TYPE);
 
         NetClient client = vertx.createNetClient();
         client.connect(9000, "localhost", res->{
@@ -54,10 +54,10 @@ public class Client2 {
             json.put("index", i);
             json.put("name", "robin");
 
-            Buffer buffer = Buffer.buffer();
-            buffer.appendString(json.toString());
+//            Buffer buffer = Buffer.buffer();
+//            buffer.appendString(json.toString());
 
-            FlexibleData data = new FlexibleData("demo", SubScribeType.ONE_TO_ONE, buffer);
+            FlexibleData data = new FlexibleData("demo", SubScribeType.ONE_TO_ONE, FlexibleData.SEND_TYPE ,json.toBuffer());
 
             netSocket[0].write(data.pack());
 

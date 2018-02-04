@@ -10,11 +10,11 @@ import java.util.List;
 
 /**
  * 核心协议包
- *  |-版本|topic长度|topic| STYPE | 数据包
+ *  |-版本|订阅类型|topic长度|topic| STYPE | 数据包
  *
- *  |--type--|--TLEN--|--TOPIC--|
+ *  |--type--|--sType--|--TLEN--|--TOPIC--|
  *
- *  |--type--|--TLEN--|--TOPIC--|--DLEN--|--DATA--|
+ *  |--type--|--sType--|--TLEN--|--TOPIC--|--DLEN--|--DATA--|
  */
 public class FlexibleData {
 
@@ -34,6 +34,20 @@ public class FlexibleData {
     final static public short ACK = 3;
 
     private short protocolType;
+
+    /**-------------------**/
+
+    /**
+     * 发送方
+     */
+    final static public short SEND_TYPE = 1;
+
+    /**
+     * 接收方
+     */
+    final static public short RECEIVE_TYPE = 1;
+
+    private short subsribeType;
 
     /**
      * 包里面的总长度 byte
@@ -58,19 +72,26 @@ public class FlexibleData {
      * 握手包
      * @param topic
      */
-    public FlexibleData(String topic, short protocolType) {
+    public FlexibleData(String topic, short protocolType, short subsribeType) {
         this.header = Buffer.buffer();
 
         this.header.appendShort(protocolType);
+        this.header.appendShort(subsribeType);
         this.header.appendInt(topic.length());
         this.header.appendString(topic);
+
+        this.topic = topic;
+        this.protocolType = protocolType;
+        this.subsribeType = subsribeType;
 
         this.protocolType = HAND_SHAKE;
     }
 
-    public FlexibleData(String topic, SubScribeType type, Buffer data) {
+    public FlexibleData(String topic, SubScribeType type, short subsribeType, Buffer data) {
 
         this.protocolType = DATA;
+
+        this.subsribeType = subsribeType;
 
         this.header = this.generateHeader(topic, data.length());
 
@@ -79,6 +100,7 @@ public class FlexibleData {
         this.type = type;
 
         this.data = data;
+
     }
 
     public FlexibleData(Buffer buffer) {
@@ -94,6 +116,9 @@ public class FlexibleData {
         int len = start;
 
         this.protocolType = buffer.getShort(len);
+        len += Short.BYTES;
+
+        this.subsribeType = buffer.getShort(len);
         len += Short.BYTES;
 
         int tLen = buffer.getInt(len);
@@ -157,6 +182,7 @@ public class FlexibleData {
         Buffer buffer = Buffer.buffer();
 
         buffer.appendShort(this.protocolType);
+        buffer.appendShort(this.subsribeType);
         buffer.appendInt(topic.length());
         buffer.appendString(topic);
         buffer.appendInt(dLen);
@@ -184,5 +210,11 @@ public class FlexibleData {
         return this.len;
     }
 
+    public short getSubsribeType() {
+        return subsribeType;
+    }
 
+    public void setSubsribeType(short subsribeType) {
+        this.subsribeType = subsribeType;
+    }
 }
