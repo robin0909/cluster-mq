@@ -11,5 +11,17 @@
 
     <artifactId>test</artifactId>
 
+    <dependencies>
+        <dependency>
+            <groupId>com.robinyang</groupId>
+            <artifactId>base</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.robinyang</groupId>
+            <artifactId>client</artifactId>
+        </dependency>
+    </dependencies>
+
 
 </project>

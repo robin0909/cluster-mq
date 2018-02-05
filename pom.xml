@@ -65,7 +65,14 @@
                 <artifactId>base</artifactId>
                 <version>${version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>com.robinyang</groupId>
+                <artifactId>client</artifactId>
+                <version>${version}</version>
+            </dependency>
         </dependencies>
+
     </dependencyManagement>
 
 </project>
