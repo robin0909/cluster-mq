@@ -166,7 +166,7 @@ public class FlexibleData {
         Buffer buffer = Buffer.buffer();
 
         buffer.appendBuffer(this.header);
-        if (data != null && data.length() != 0) {
+        if (data != null && data.length() != 0) {//data是数据包
             buffer.appendBuffer(this.data);
         }
 
@@ -181,8 +181,8 @@ public class FlexibleData {
     private Buffer generateHeader(String topic, int dLen) {
         Buffer buffer = Buffer.buffer();
 
-        buffer.appendShort(this.protocolType);
-        buffer.appendShort(this.subsribeType);
+        buffer.appendShort(this.protocolType);//包类型，是握手包还是数据包还是回复包
+        buffer.appendShort(this.subsribeType);//发送类型是一对一或者一对多
         buffer.appendInt(topic.length());
         buffer.appendString(topic);
         buffer.appendInt(dLen);
