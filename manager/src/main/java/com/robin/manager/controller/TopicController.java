@@ -5,6 +5,7 @@ import com.robin.manager.help.action.Result;
 import com.robin.manager.model.TopicWrap;
 import com.robin.manager.service.RemoteTopicService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,6 +16,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping(value = "/topic")
+@CrossOrigin
 public class TopicController {
 
     @Autowired
