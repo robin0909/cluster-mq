@@ -266,8 +266,8 @@ public class BrokerNodeManager {
                         try {
                             HttpRequest httpRequest = HttpRequest
                                     .post(brokerNode.url().concat(updateUrl))
-                                    .connectTimeout(500)
-                                    .readTimeout(500)
+                                    .connectTimeout(1000)
+                                    .readTimeout(1000)
                                     .form("data", param.toJSONString());
 
                             if (httpRequest != null && httpRequest.code() == 200) {
@@ -288,7 +288,7 @@ public class BrokerNodeManager {
                                 BrokerNodeManager.this.electLeader();
                             }
                         } catch (Exception e) {
-                            logger.warn("leader is down");
+                            logger.warn("leader is down", e);
                             BrokerNodeManager.this.removeBrokerNode(BrokerNodeManager.this.leader);
                             BrokerNodeManager.this.leader = null;
 
