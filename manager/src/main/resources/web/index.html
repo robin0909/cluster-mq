@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <title>cluster-mq</title>
-  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-  <link rel="stylesheet" href="dist/css/AdminLTE.min.css">
-  <link rel="stylesheet" href="dist/css/skins/_all-skins.min.css">
-  <link rel="stylesheet" href="plugins/bootstrap-wysihtml5/bootstrap3-wysihtml5.min.css">
+  <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport" />
+  <link href="dist/css/bootstrap.css" rel="stylesheet" />
+  <link rel="stylesheet" href="dist/css/AdminLTE.min.css" />
+  <link rel="stylesheet" href="dist/css/skins/_all-skins.min.css" />
   <script src="dist/js/jquery-3.2.0.min.js"></script>
   <style>
     #headtop{
@@ -17,9 +17,9 @@
     }
   </style>
 </head>
-<body class="hold-transition skin-blue sidebar-mini">
+<body class="hold-transition skin-blue ">
 <div id="headtop" >Cluster-MQ</div>
-<div class="wrapper" style="height: 530px">
+<div class="wrapper" style="height: 590px">
   <aside class="main-sidebar">
     <section class="sidebar">
       <ul class="sidebar-menu" data-widget="tree">
@@ -51,7 +51,7 @@
   </aside>
 
   <div class="content-wrapper">
-    <section id="showdate" class="content" style="height: 530px"></section>
+    <section id="showdate"  style="height: 530px"></section>
   </div>
   <footer class="main-footer">
     <div class="pull-right hidden-xs">
@@ -60,19 +60,51 @@
     <strong>Copyright &copy; 2017-2018 <a href="#">cluster-mq</a></strong>
   </footer>
 </div>
-<script>
+<script type="text/javascript">
+//  function showRun() {
+//      outtime=setTimeout("show()",1000);
+//      if(event.type == "click")
+//      {
+//          clearTimeout(outtime);
+//      }
+//  }
+$(function () {
+    show();
+})
   function show(){
      var showdate=$("#showdate");
-     var outline_date= [{"hostip":"192.168.1.100","hostport":8080},
-                        {"hostip":"192.168.1.101","hostport":8080},
-                        {"hostip":"192.168.1.102","hostport":8080}
-                       ];
-     var outline="<table border='1'><tr><th width='200px'>主机</th><th width='200px'>端口</th></tr>";
-     for(var i=0;i<outline_date.length;i++){
-         outline+="<tr><td>"+outline_date[i].hostip+"</td><td>"+outline_date[i].hostport+"</td></tr>";
-     }
-      outline+="</table>";
-      showdate.html(outline);
+      $.ajax({
+          type : "POST",
+          url : "http://127.0.0.1:8080/node/all",
+          success : function(data) {
+              if (data.code == 200) {
+                  var keys1 = Object.keys(data.data.brokerNodeMap);
+                  var nodeinfo='<h3 align="center">节点信息(共'+keys1.length+'个）</h3><table class="table table-striped table-bordered  table-hover"><tr><th>id</th><th>主机</th><th>端口 </th></tr>';
+                  for(var i in keys1){
+                       if (data.data.brokerNodeMap[keys1[i]] != null) {
+                           nodeinfo+='<tr><td>'+i+'</td><td>'+data.data.brokerNodeMap[keys1[i]].ip+'</td><td>'+data.data.brokerNodeMap[keys1[i]].port +'</td></tr>';
+                       }
+                  }
+                  nodeinfo+='</table>';
+
+                  var keys2 = Object.keys(data.data.topicWrapMap)
+                  var topicnfo='</br><h3 align="center">Topic信息(共'+keys2.length+'个）</h3>';
+                  if(keys2.length!=0){
+                      topicnfo+='<table class="table table-striped table-bordered  table-hover"><tr><th>topic名字</th><th>topic类型</th></tr>';
+                  }
+                  for (var i in keys2) {
+                      topicnfo+='<tr><td>'+data.data.topicWrapMap[keys2[i]]+'</td><td>'+data.data.topicWrapMap[keys2[i]].type+'</td></tr>';
+                  }
+                  if(keys2.length!=0){
+                      topicnfo+='</table>';
+                  }
+                  showdate.html(nodeinfo+topicnfo);
+              } else {
+                  alert("网络错误")
+              }
+          }
+      });
+
   }
 </script>
 </body>

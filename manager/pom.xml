@@ -33,7 +33,6 @@
             <groupId>com.robinyang</groupId>
             <artifactId>base</artifactId>
         </dependency>
-
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
