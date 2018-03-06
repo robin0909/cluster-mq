@@ -31,6 +31,9 @@ BUILD SUCCESS 说明构建成功
 	java -jar cluster-mq-manager.jar --node.id=2 --cluster.ip=127.0.0.1 --cluster.port=8080 --server.port=8081 --tcp.port=9001
 	
 	java -jar cluster-mq-manager.jar --node.id=3 --cluster.ip=127.0.0.1 --cluster.port=8080 --server.port=8082 --tcp.port=9002
+	
+	java -jar cluster-mq-manager.jar --node.id=4 --cluster.ip=127.0.0.1 --cluster.port=8080 --server.port=8083 --tcp.port=9003
+    	
 	```
 
 ### api

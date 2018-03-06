@@ -15,11 +15,15 @@
       background-size:100% 100px;
       height: 100px;
     }
+    .table-bordered th,
+    .table-bordered td {
+      border: 1px solid #000 !important;
+    }
   </style>
 </head>
 <body class="hold-transition skin-blue ">
 <div id="headtop" >Cluster-MQ</div>
-<div class="wrapper" style="height: 590px">
+<div class="wrapper" style="height: 580px">
   <aside class="main-sidebar">
     <section class="sidebar">
       <ul class="sidebar-menu" data-widget="tree">
@@ -45,7 +49,7 @@
   </aside>
 
   <div class="content-wrapper">
-    <section id="showdate"  style="height: 530px"></section>
+    <section id="showdate"  style="height: 580px;margin-top:-19px"></section>
   </div>
   <footer class="main-footer">
     <div class="pull-right hidden-xs">
@@ -67,12 +71,12 @@
               if (data.code == 200) {
                   var brokerNodeMapData = data.data.brokerNodeMap;
                   var keys1 = Object.keys(brokerNodeMapData);
-                  var node_info='<h3 align="center">节点信息(共'+keys1.length+'个）</h3><table class="table table-striped table-bordered  table-hover"><tr><th>主机</th><th>端口 </th></tr>';
+                  var node_info='<br/><h3 align="center">节点信息(共'+keys1.length+'个）</h3><table class="table table-striped table-bordered  table-hover"><tr><th>主机</th><th>端口 </th></tr>';
                   for(var i in keys1){
                        if (brokerNodeMapData[keys1[i]] != null) {
                            var ip = brokerNodeMapData[keys1[i]].ip;
                            var port = brokerNodeMapData[keys1[i]].port
-                           node_info+='<tr><td>'+ip+'</td><td>'+port +'</td></tr>';
+                           node_info+='<tr><td width="640px">'+ip+'</td><td>'+port +'</td></tr>';
                        }
                   }
                   node_info+='</table>';
