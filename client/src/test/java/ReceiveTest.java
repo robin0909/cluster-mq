@@ -22,6 +22,11 @@ public class ReceiveTest {
         @Override
         public void onReceive(JsonObject data) {
             System.out.println(data.toString());
+
+            Long time = data.getLong("time");
+            long betweenTime = System.currentTimeMillis() - time;
+
+            System.out.println("current: "+System.currentTimeMillis()+", between: "+betweenTime);
         }
     }
 }

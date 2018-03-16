@@ -13,9 +13,15 @@ public class SendTest {
             JsonObject data = new JsonObject();
             data.put("index", i);
             data.put("name", "robin"+i);
+            data.put("time", System.currentTimeMillis());
+
+
 
             sender.send(data, SubScribeType.ONE_TO_MANY);
         }
+
+        System.out.println("----------- send end--------");
+        System.out.println("timestamp: "+System.currentTimeMillis());
     }
 
 
